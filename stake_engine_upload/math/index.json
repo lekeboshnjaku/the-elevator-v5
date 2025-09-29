@@ -1,10 +1,16 @@
 {
-    "modes":  [
-                  {
-                      "cost":  1,
-                      "weights":  "lookup_table.csv",
-                      "name":  "limbo",
-                      "events":  "game_logic.jsonl.zst"
-                  }
-              ]
+  "modes": [
+    {
+      "name": "base",
+      "cost": 1.0,
+      "events": "game_logic.jsonl.zst",
+      "weights": "lookup_table_base.csv"
+    },
+    {
+      "name": "elevate",
+      "cost": 3.0,
+      "events": "game_logic.jsonl.zst",
+      "weights": "lookup_table_elevate.csv"
+    }
+  ]
 }

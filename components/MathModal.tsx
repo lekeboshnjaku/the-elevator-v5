@@ -99,17 +99,17 @@ const MathModal: React.FC<MathModalProps> = ({
               <p className="text-xl font-bold text-red-400">{(HOUSE_EDGE * 100).toFixed(2)}%</p>
             </div>
             <div className="bg-slate-900 p-3 rounded-lg text-center">
-              <p className="text-sm text-slate-400">Min Win (total)</p>
+              <p className="text-sm text-slate-400">Min Win (Total)</p>
               <p className="text-xl font-bold text-amber-300">{formatMoney(minWin)}</p>
             </div>
             <div className="bg-slate-900 p-3 rounded-lg text-center">
-              <p className="text-sm text-slate-400">Max Win (total)</p>
+              <p className="text-sm text-slate-400">Max Win (Total)</p>
               <p className="text-xl font-bold text-amber-300">{formatMoney(maxWin)}</p>
             </div>
           </div>
           
           <div>
-            <h3 className="font-bold text-lg text-white mb-1 mt-4">How is Win Chance Calculated?</h3>
+            <h3 className="font-bold text-lg text-white mb-1 mt-4">How Is Win Chance Calculated?</h3>
             <p className="text-sm font-mono bg-slate-900 p-3 rounded-md break-all">Win Chance = (1 - House Edge) / Target Multiplier</p>
             <p className="text-sm mt-2">A higher target multiplier leads to a lower chance of winning, but a higher payout when you do win.</p>
           </div>

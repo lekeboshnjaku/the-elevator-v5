@@ -23,16 +23,16 @@ const HistoryGraph: React.FC<{ history: HistoryEntry[] }> = ({ history }) => {
     }
 
     return (
-        <div className="h-40 bg-slate-950/50 rounded-xl p-2 relative border border-slate-700/50 flex items-end justify-around shadow-inner">
+        <div className="h-44 bg-slate-950/50 rounded-lg p-3 relative border border-slate-700/50 flex items-end justify-around shadow-inner">
              {/* Background grid lines */}
-             <div className="absolute inset-0 flex flex-col justify-between p-2 pointer-events-none">
+             <div className="absolute inset-0 flex flex-col justify-between p-3 pointer-events-none">
                 <div className="w-full border-t border-dashed border-slate-700/50"></div>
                 <div className="w-full border-t border-dashed border-slate-700/50"></div>
                 <div className="w-full border-t border-dashed border-slate-700/50"></div>
              </div>
              {displayHistory.map((entry, index) => {
                 const y = calculateYPosition(entry.multiplier);
-                const colorClass = entry.isWin ? 'bg-green-400 shadow-[0_0_12px_3px_rgba(74,222,128,0.7)]' : 'bg-red-500 shadow-[0_0_12px_3px_rgba(239,68,68,0.7)]';
+                const colorClass = entry.isWin ? 'bg-green-400 shadow-[0_0_12px_3px_rgba(74,222,128,0.55)]' : 'bg-red-500 shadow-[0_0_12px_3px_rgba(239,68,68,0.55)]';
 
                 return (
                     <div key={index} className="group relative w-2 h-full flex items-end justify-center">
@@ -59,7 +59,7 @@ const StatsAndHistoryPanel: React.FC<StatsAndHistoryPanelProps> = ({ history, se
     const profitColor = sessionProfit > 0 ? 'success' : sessionProfit < 0 ? 'loss' : 'text-slate-300';
 
     return (
-        <div className="relative w-full glass-panel rounded-lg p-3 space-y-4 animate-cyan-pulse-border">
+        <div className="relative w-full glass-panel rounded-lg p-4 space-y-4 animate-cyan-pulse-border">
              <div className="absolute inset-0 bg-black/10 rounded-xl overflow-hidden pointer-events-none">
                 {/* Scanline effect */}
                 <div className="absolute inset-0" style={{background: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.3) 0, rgba(0,0,0,0.3) 1px, transparent 1px, transparent 3px)'}}></div>
@@ -76,7 +76,7 @@ const StatsAndHistoryPanel: React.FC<StatsAndHistoryPanelProps> = ({ history, se
                      <button 
                         className="lg:hidden bg-slate-800/80 p-1 rounded-full text-white hover:bg-slate-700/80 active:scale-90 transition-all"
                         onClick={onClose}
-                        aria-label="Close stats panel"
+                        aria-label="Close Stats Panel"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

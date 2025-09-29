@@ -1,8 +1,9 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+﻿import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { GameStatus, HistoryEntry, AutoBetSettings, AutoBetAction, CurrencyConfig, ApiError, AchievementId, Achievement } from '../types';
 import { rgsApiService } from '../src/services/rgsApiService';
 import { audioService } from '../src/services/audioService';
 import { aiService } from '../services/aiService';
+import { getElevateCost } from '../src/services/mathConfigService';
 import { MAX_MULTIPLIER } from '../constants';
 import { allAchievements } from '../data/achievementData';
 
@@ -27,6 +28,8 @@ export const useElevatorGame = (isInstantBet: boolean) => {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [lastResult, setLastResult] = useState<HistoryEntry | null>(null);
   const [lastWinAmount, setLastWinAmount] = useState<number>(0);
+  const [isBonusBuy, setIsBonusBuy] = useState<boolean>(false);
+  const [elevateCost, setElevateCost] = useState<number>(1.2);
 
   // --- State from Backend ---
   const [clientSeed, setClientSeed] = useState<string>('');
@@ -62,12 +65,29 @@ export const useElevatorGame = (isInstantBet: boolean) => {
   const lossStreak = useRef(0);
   const luckyLiftStreak = useRef(0);
 
+  /* ------------------------------------------------------------ */
+  /*  BET AMOUNT (must be declared BEFORE first usage)             */
+  /* ------------------------------------------------------------ */
+  const betAmount = _betAmount;
+
+  // Calculate effective bet amount (includes bonus buy cost)
+  const effectiveBetAmount = useMemo(() => {
+    const bet = parseFloat(betAmount);
+    return isNaN(bet) ? 0 : bet * (isBonusBuy ? elevateCost : 1);
+  }, [betAmount, isBonusBuy]);
+
+  /* ------------------------------------------------------------ */
+  /*  Max allowed multiplier depends on Elevate Mode              */
+  /* ------------------------------------------------------------ */
+  const maxAllowedMultiplier = MAX_MULTIPLIER;
+
   const initializeGame = useCallback(async () => {
     setLoading(true);
     setError(null);
     // Reset to game defaults on every load
     _setBetAmount('0.00');
     setTargetMultiplier('2.00');
+    setIsBonusBuy(false);
     // Reset session tracking
     setSessionStartTime(new Date());
     setTotalWagered(0);
@@ -96,6 +116,8 @@ export const useElevatorGame = (isInstantBet: boolean) => {
     }
   }, []);
 
+  useEffect(() => { getElevateCost().then(setElevateCost).catch(() => {}); }, []);
+
   const playWelcomeMessage = useCallback(async () => {
     // Fetch a random, pre-approved welcome message.
     const fullIntroSequence = await aiService.generateInitialGreeting();
@@ -121,20 +143,50 @@ export const useElevatorGame = (isInstantBet: boolean) => {
         _setBetAmount(value);
     }
   };
-  const betAmount = _betAmount;
 
   const canBet = useMemo(() => {
     const bet = parseFloat(betAmount);
     const target = parseFloat(targetMultiplier);
-    const isBetValid = !isNaN(bet) && bet >= betLimits.minBet && bet <= betLimits.maxBet && bet <= balance;
-    const isTargetValid = !isNaN(target) && target >= 1.01 && target <= MAX_MULTIPLIER;
+    const isBetValid =
+      !isNaN(bet) &&
+      bet >= betLimits.minBet &&
+      bet <= betLimits.maxBet &&
+      effectiveBetAmount <= balance;
+    const isTargetValid = !isNaN(target) && target >= 1.01 && target <= maxAllowedMultiplier;
     return isBetValid && isTargetValid && gameStatus === GameStatus.IDLE && !isAutoBetting;
-  }, [betAmount, targetMultiplier, balance, gameStatus, isAutoBetting, betLimits]);
+  }, [betAmount, targetMultiplier, balance, gameStatus, isAutoBetting, betLimits, effectiveBetAmount, maxAllowedMultiplier]);
   
   const isBetAmountInvalid = useMemo(() => {
     const bet = parseFloat(betAmount);
-    return !isNaN(bet) && bet > 0 && bet > balance;
-  }, [betAmount, balance]);
+    return !isNaN(bet) && bet > 0 && effectiveBetAmount > balance;
+  }, [betAmount, balance, effectiveBetAmount]);
+
+  const toggleBonusBuy = useCallback(() => {
+    setIsBonusBuy(prev => {
+      const turningOn = !prev;
+      /* ------------------------------------------------------------
+         Operator voice-over: one line per toggle event
+         ON  -> pick from elevateOnLines
+         OFF -> pick from elevateOffLines
+      ------------------------------------------------------------ */
+      const elevateOnLines = [
+        'Elevate Mode activated',
+        'To the moon',
+        'High roller engaged',
+      ] as const;
+
+      const elevateOffLines = [
+        'Back to base',
+        'Elevate Mode deactivated',
+      ] as const;
+
+      const pool = turningOn ? elevateOnLines : elevateOffLines;
+      const chosen = pool[Math.floor(Math.random() * pool.length)];
+      audioService.speak(chosen, false);
+
+      return !prev;
+    });
+  }, []);
 
   const rotateServerSeed = async () => {
       const { newServerSeedHash, newNonce } = await rgsApiService.rotateServerSeed();
@@ -210,15 +262,16 @@ export const useElevatorGame = (isInstantBet: boolean) => {
     const bet = parseFloat(betAmount);
     const target = parseFloat(targetMultiplier);
     const currentBalance = balance; // Capture balance at time of bet
-    const isBetValid = !isNaN(bet) && bet >= betLimits.minBet && bet <= betLimits.maxBet && bet <= currentBalance;
-    const isTargetValid = !isNaN(target) && target >= 1.01 && target <= MAX_MULTIPLIER;
+    const effectiveCost = bet * (isBonusBuy ? elevateCost : 1);
+    const isBetValid = !isNaN(bet) && bet >= betLimits.minBet && bet <= betLimits.maxBet && effectiveCost <= currentBalance;
+    const isTargetValid = !isNaN(target) && target >= 1.01 && target <= maxAllowedMultiplier;
 
     if (gameStatus !== GameStatus.IDLE || !isBetValid || !isTargetValid) return;
 
     setGameStatus(GameStatus.PLAYING);
     if(error) setError(null);
-    setTotalWagered(prev => prev + bet); // Track total wagered for reality check
-    setBalance(prev => prev - bet);
+    setTotalWagered(prev => prev + effectiveCost); // Track total wagered for reality check
+    setBalance(prev => prev - effectiveCost);
     lastPlacedBetAmount.current = bet;
 
     try {
@@ -228,6 +281,7 @@ export const useElevatorGame = (isInstantBet: boolean) => {
         clientSeed,
         nonce,
         isInstantBet,
+        isBonusBuy,
       });
 
       const entry: HistoryEntry = {
@@ -241,14 +295,17 @@ export const useElevatorGame = (isInstantBet: boolean) => {
       setLastResult(entry);
       setHistory(prev => [entry, ...prev.slice(0, 14)]);
       setNonce(n => n + 1);
-      setBalance(betResult.newBalance);
       
-      const profitChange = betResult.isWin ? betResult.winAmount - bet : -bet;
+      // Calculate win amount and update balance manually (don't trust backend newBalance)
+      const winAmount = betResult.isWin ? bet * target : 0;
+      setBalance(currentBalance - effectiveCost + winAmount);
+      
+      const profitChange = betResult.isWin ? winAmount - effectiveCost : -effectiveCost;
       setSessionProfit(prev => prev + profitChange);
 
       if (betResult.isWin) {
         setGameStatus(GameStatus.WON);
-        setLastWinAmount(betResult.winAmount);
+        setLastWinAmount(winAmount);
       } else {
         setGameStatus(GameStatus.LOST);
         setLastWinAmount(0);
@@ -265,12 +322,12 @@ export const useElevatorGame = (isInstantBet: boolean) => {
         } else {
             setError("An unknown error occurred. Bet refunded.");
         }
-        setBalance(prev => prev + bet);
-        setTotalWagered(prev => prev - bet); // Refund wager from tracking
+        setBalance(prev => prev + effectiveCost);
+        setTotalWagered(prev => prev - effectiveCost); // Refund wager from tracking
         setGameStatus(GameStatus.IDLE);
         setLastWinAmount(0);
     }
-  }, [betAmount, targetMultiplier, clientSeed, nonce, balance, gameStatus, betLimits, error, isInstantBet, checkAndUnlockAchievements]);
+  }, [betAmount, targetMultiplier, clientSeed, nonce, balance, gameStatus, betLimits, error, isInstantBet, checkAndUnlockAchievements, isBonusBuy]);
   
   useEffect(() => {
     if (gameStatus === GameStatus.WON || gameStatus === GameStatus.LOST) {
@@ -395,7 +452,8 @@ export const useElevatorGame = (isInstantBet: boolean) => {
       return;
     }
     
-    const profitChange = lastResult.isWin ? (parseFloat(targetMultiplier) * lastPlacedBetAmount.current) - lastPlacedBetAmount.current : -lastPlacedBetAmount.current;
+    const effectiveCost = lastPlacedBetAmount.current * (isBonusBuy ? elevateCost : 1);
+    const profitChange = lastResult.isWin ? (parseFloat(targetMultiplier) * lastPlacedBetAmount.current) - effectiveCost : -effectiveCost;
     autoBetSessionProfit.current += profitChange;
     
     // Check for stop conditions based on profit/loss or if the last bet has finished.
@@ -420,8 +478,9 @@ export const useElevatorGame = (isInstantBet: boolean) => {
     }
     
     const clampedBet = Math.max(betLimits.minBet, Math.min(betLimits.maxBet, nextBet));
+    const effectiveNextBet = clampedBet * (isBonusBuy ? elevateCost : 1);
     
-    if (clampedBet > balance) {
+    if (effectiveNextBet > balance) {
       setError("Auto-bet stopped due to insufficient funds.");
       stopAutoBet();
       return;
@@ -430,7 +489,7 @@ export const useElevatorGame = (isInstantBet: boolean) => {
     _setBetAmount(clampedBet.toFixed(2));
     placeNextAutoBet.current = true;
 
-  }, [gameStatus, isAutoBetting, autoBetSettings, lastResult, stopAutoBet, balance, betLimits, targetMultiplier, betAmount, betsRemaining, setError]);
+  }, [gameStatus, isAutoBetting, autoBetSettings, lastResult, stopAutoBet, balance, betLimits, targetMultiplier, betAmount, betsRemaining, setError, isBonusBuy]);
   
   const clearNewlyUnlockedQueue = () => {
       setNewlyUnlockedQueue([]);
@@ -472,5 +531,15 @@ export const useElevatorGame = (isInstantBet: boolean) => {
     unlockedAchievements,
     newlyUnlockedQueue,
     clearNewlyUnlockedQueue,
+    // Bonus Buy
+    isBonusBuy,
+    toggleBonusBuy,
+    effectiveBetAmount,
+    elevateCost,
   };
 };
+
+
+
+
+

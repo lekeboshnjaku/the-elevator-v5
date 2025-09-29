@@ -1,4 +1,8 @@
 
+import "./upload/verify/front-zip/front/styles.bundle.css";
+import "./upload/verify/front-zip/front/styles.css";
+import "./styles.css";
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './src/App';

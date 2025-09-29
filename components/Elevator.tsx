@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { GameStatus, HistoryEntry } from '../types';
 import { ANIMATION_DURATION } from '../constants';
 import { audioService } from '../src/services/audioService';
+import { usePerformance } from '../src/services/PerformanceContext';
 import ElevatorCharacter from './ElevatorCharacter';
 
 // Inlined sub-component for visual detail
@@ -29,6 +30,11 @@ const Elevator: React.FC<ElevatorProps> = ({
     targetMultiplier, 
     isInstantBet
 }) => {
+  /* ------------------------------------------------------------ */
+  /*          Performance profile (max FPS based throttling)      */
+  /* ------------------------------------------------------------ */
+  const { maxFps } = usePerformance();
+
   const isDoorsClosed = gameStatus === GameStatus.IDLE || gameStatus === GameStatus.PLAYING || isInstantBet;
   const prevGameStatusRef = useRef(gameStatus);
   
@@ -42,11 +48,22 @@ const Elevator: React.FC<ElevatorProps> = ({
     if (gameStatus === GameStatus.PLAYING && !isInstantBet) {
       let frameId: number;
       const start = performance.now();
+      const frameInterval = 1000 / maxFps; // throttle to device capability
+      let last = start;
       const loop = (now: number) => {
-        const elapsed = now - start;
-        const pct = Math.min(1, elapsed / animationDuration);
-        setProgress(pct);
-        if (pct < 1) frameId = requestAnimationFrame(loop);
+        const elapsedTotal = now - start;
+        const pct = Math.min(1, elapsedTotal / animationDuration); // always compute
+
+        // Throttle state updates to the desired FPS
+        if (now - last >= frameInterval) {
+          last += frameInterval;
+          setProgress(pct);
+        }
+
+        // Continue animating until we’ve reached the top
+        if (pct < 1) {
+          frameId = requestAnimationFrame(loop);
+        }
       };
       frameId = requestAnimationFrame(loop);
       return () => {
@@ -107,7 +124,7 @@ const Elevator: React.FC<ElevatorProps> = ({
                         style={{
                             height: '60%',
                             transform: `translate(-50%, -${progress * 100}%)`,
-                            transition: isInstantBet ? 'none' : 'transform 50ms linear',
+                            transition: isInstantBet ? 'none' : `transform ${Math.max(50, Math.round(1000 / maxFps))}ms linear`,
                         }}
                     ></div>
                 
@@ -126,7 +143,11 @@ const Elevator: React.FC<ElevatorProps> = ({
                 >
                 <div className="absolute w-full h-full bg-gradient-to-r from-slate-800 via-transparent to-slate-800 opacity-50"></div>
                 <div className="elevator-window"></div>
-                <div className="absolute top-1/2 right-0 w-2 h-1/2 bg-slate-800/50 rounded-full -translate-y-1/2 shadow-lg"></div>
+                {/* Door handle – mobile: smaller & lower; desktop (lg) keeps original */}
+                <div
+                    className="absolute right-0 bg-slate-800/50 rounded-full shadow-lg top-[62%] h-1/3 w-1.5 -translate-y-1/2
+                               lg:top-1/2 lg:h-1/2 lg:w-2"
+                ></div>
                 </div>
                 {/* Right Door */}
                 <div
@@ -138,7 +159,11 @@ const Elevator: React.FC<ElevatorProps> = ({
                 >
                 <div className="absolute w-full h-full bg-gradient-to-l from-slate-800 via-transparent to-slate-800 opacity-50"></div>
                 <div className="elevator-window"></div>
-                <div className="absolute top-1/2 left-0 w-2 h-1/2 bg-slate-800/50 rounded-full -translate-y-1/2 shadow-lg"></div>
+                {/* Door handle – mobile: smaller & lower; desktop (lg) keeps original */}
+                <div
+                    className="absolute left-0 bg-slate-800/50 rounded-full shadow-lg top-[62%] h-1/3 w-1.5 -translate-y-1/2
+                               lg:top-1/2 lg:h-1/2 lg:w-2"
+                ></div>
                 </div>
             </div>
 

@@ -56,6 +56,19 @@ const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ isOpen, onClose, 
                   to { opacity: 1; transform: scale(1); }
                 }
                 .animate-fade-in { animation: fade-in 0.3s ease-out; }
+
+                /* ---------------------------------------------------- */
+                /*  Uniform card sizing & mobile scroll area           */
+                /* ---------------------------------------------------- */
+                /* Card height based on the visual size of “Risk Taker” */
+                .achv-card      { height: 6rem; }          /* 24 tailwind = 96px */
+                .achv-card p    { overflow-wrap: anywhere; } /* ensure wrapping */
+
+                /* Scroll area – ~5 cards (≈480-500px) on mobile */
+                .achv-scroll    { max-height: 560px; }      /* mobile default */
+                @media (min-width: 1024px) {
+                  .achv-scroll  { max-height: 70vh; }       /* larger on desktop */
+                }
             `}</style>
             <div
                 className="bg-slate-800 rounded-lg shadow-2xl p-6 w-full max-w-lg border border-slate-600 max-h-[80vh] flex flex-col"
@@ -94,31 +107,31 @@ const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ isOpen, onClose, 
                         ref={closeButtonRef}
                         onClick={onClose}
                         className="text-slate-400 hover:text-white p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        aria-label="Close achievements"
+                        aria-label="Close Achievements"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
-                <div className="overflow-y-auto space-y-3 pr-2 -mr-2">
+                <div className="overflow-y-auto achv-scroll space-y-3.5 pr-2 -mr-2">
                     {achievementsList.map((ach) => {
                         const isUnlocked = unlockedIds.has(ach.id);
                         return (
                             <div
                                 key={ach.id}
-                                className={`relative flex items-center gap-4 neon-card-bg p-3 rounded-lg transition-all duration-300
-                                    ${isUnlocked ? `${getTheme(ach.id).borderClass} border animate-unlock-once` : 'border border-slate-700 grayscale opacity-40'}`}
+                                className={`achv-card relative flex items-center gap-4 neon-card-bg p-3 rounded-lg transition-all duration-300
+                                    ${isUnlocked ? `${getTheme(ach.id).borderClass} border animate-unlock-once` : 'border border-slate-700 grayscale opacity-50'}`}
                             >
                                 <div
                                     className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full
-                                        ${isUnlocked ? `ring-2 ${getTheme(ach.id).ringClass} bg-slate-800/40` : 'bg-slate-700'}`}
+                                        ${isUnlocked ? `ring-[1.5px] ${getTheme(ach.id).ringClass} bg-slate-800/40` : 'bg-slate-700'}`}
                                 >
                                     <div className="w-6 h-6">{ach.icon}</div>
                                 </div>
                                 <div className="flex-grow">
-                                    <h3 className={`font-bold ${isUnlocked ? 'text-white' : 'text-slate-400'}`}>{ach.name}</h3>
-                                    <p className="text-sm text-slate-400">{ach.description}</p>
+                                    <h3 className={`font-bold whitespace-normal break-words ${isUnlocked ? 'text-white' : 'text-slate-400'}`}>{ach.name}</h3>
+                                    <p className="text-sm text-slate-400 whitespace-normal break-words">{ach.description}</p>
                                 </div>
                                 {/* Lock overlay for locked achievements */}
                                 {!isUnlocked && (

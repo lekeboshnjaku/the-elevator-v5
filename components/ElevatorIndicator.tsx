@@ -52,7 +52,7 @@ const ElevatorIndicator: React.FC<ElevatorIndicatorProps> = ({ gameStatus, lastR
             } else {
                 content = (
                     <>
-                        <p className="text-sm uppercase tracking-widest opacity-70">Ascending</p>
+                        <p className="text-sm uppercase tracking-widest opacity-70">Ascending...</p>
                         <p className="text-5xl font-bold leading-none -mt-1 transition-transform duration-300">{floor.toFixed(2)}x</p>
                     </>
                 );

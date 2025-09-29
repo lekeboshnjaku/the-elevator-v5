@@ -269,7 +269,7 @@ const GameLoadingScreen: React.FC<{ progress: number }> = ({ progress }) => {
                     }}
                 >
                     <h1 className="text-4xl font-medium text-white lowercase tracking-[0.15em]">
-                        oozelabs
+                        OOZELABS
                     </h1>
                 </div>
             </div>

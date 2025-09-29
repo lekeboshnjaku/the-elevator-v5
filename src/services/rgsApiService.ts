@@ -22,6 +22,8 @@ interface PlayRequest {
     clientSeed: string;
     nonce: number;
     isInstantBet?: boolean;
+    /** Optional flag sent when Bonus Buy (+20 % cost) is enabled */
+    isBonusBuy?: boolean;
 }
 
 interface PlayResponse {

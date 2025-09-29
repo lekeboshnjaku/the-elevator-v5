@@ -62,7 +62,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({ volume, onVolumeChange })
                 onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
                 className="volume-slider"
                 style={backgroundStyle}
-                aria-label="Volume control"
+                aria-label="Volume Control"
             />
         </div>
     );
