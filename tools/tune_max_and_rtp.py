@@ -170,7 +170,7 @@ def tune_mode(name: str, csv_path: str, jsonl_path: str, target_max: int, target
 
 
 if __name__ == '__main__':
-    # Base: max 1,000,000 (x100), target avg 0.98x
-    tune_mode('base', 'math/lookup_table_base.csv', 'math/game_logic_base.jsonl', 1_000_000, 0.98, 100)
+    # Base: max 1,000,000 (x100), nudge target avg slightly above to counter rounding
+    tune_mode('base', 'math/lookup_table_base.csv', 'math/game_logic_base.jsonl', 1_000_000, 0.985, 100)
     # Elevate: max 10,000,000 (x100), target avg 0.98x
     tune_mode('elevate', 'math/lookup_table_elevate.csv', 'math/game_logic_elevate.jsonl', 10_000_000, 0.98, 100)
