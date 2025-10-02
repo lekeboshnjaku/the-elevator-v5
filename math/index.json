@@ -2,13 +2,13 @@
   "modes": [
     {
       "name": "base",
-      "cost": 1,
+      "cost": 100,
       "events": "game_logic_base.jsonl",
       "weights": "lookup_table_base.csv"
     },
     {
       "name": "elevate",
-      "cost": 1,
+      "cost": 300,
       "events": "game_logic_elevate.jsonl",
       "weights": "lookup_table_elevate.csv"
     }
