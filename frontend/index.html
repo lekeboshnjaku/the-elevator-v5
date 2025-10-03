@@ -1,1 +1,383 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>The Elevator</title><link rel="icon" href="data:,"/><link rel="preload" as="video" href="./assets/intro.mp4" crossorigin><link href="./styles.96f0bc0b4476ad0934d3.css" rel="stylesheet"></head><body><div id="root"></div><script defer="defer" src="./bundle.44898d7cd6dcc7075221.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/><title>The Elevator V2</title><link rel="icon" href="data:,"/>
+<link rel="preload" as="video" href="assets/intro.mp4" crossorigin>
+<link rel="preload" as="font" href="assets/fonts/Inter-Bold.woff2" type="font/woff2" crossorigin>
+<link rel="preload" as="font" href="assets/fonts/Inter-Regular.woff2" type="font/woff2" crossorigin>
+<link rel="preload" as="font" href="assets/fonts/anton-v25-latin-regular.woff2" type="font/woff2" crossorigin>
+<link rel="preload" as="font" href="assets/fonts/chakra-petch-v11-latin-700.woff2" type="font/woff2" crossorigin>
+<link rel="preload" as="font" href="assets/fonts/chakra-petch-v11-latin-regular.woff2" type="font/woff2" crossorigin>
+<link rel="preload" as="font" href="assets/fonts/orbitron-v31-latin-variable-wght.woff2" type="font/woff2" crossorigin>
+<link href="styles.96f0bc0b4476ad0934d3.css" rel="stylesheet">
+<style>
+  /* Container that clips the center line to the elevator doors */
+  .center-door-clip{position:absolute;overflow:hidden;pointer-events:none;z-index:9999;display:none}
+  .center-door-line{position:absolute;top:0;bottom:0;left:50%;width:2px;background:rgba(0,0,0,.7);transform:translateX(-1px);box-shadow:0 0 2px rgba(0,0,0,.25)}
+  @media (max-width: 640px){.center-door-line{width:1px;transform:translateX(-0.5px);background:rgba(0,0,0,.75)}}
+  /* Balance typography */
+  .balance-orbitron{font-family:'Orbitron','Orbitron Variable',system-ui,sans-serif;font-weight:700;letter-spacing:.02em;color:#b8ffff;text-shadow:0 0 8px rgba(0,255,255,.8),0 0 16px rgba(0,255,255,.35),0 0 2px rgba(0,255,255,1);font-size:clamp(1rem,2.2vw,1.6rem)}
+  @supports (font-variation-settings: normal){.balance-orbitron{font-variation-settings:"wght" 700}}
+  @media (max-width:640px){.balance-orbitron{font-size:clamp(0.95rem,3.5vw,1.4rem)}}
+  @media (min-width:1600px){.balance-orbitron{font-size:clamp(1.2rem,1.5vw,1.8rem)}}
+  /* Avoid layout shifts: typography only; positioning stays app-controlled */
+  /* Control panel stability - prevent movement/shifting when elevate mode is enabled */
+  .elevate-mode .control-panel, .elevate-mode .controls, .elevate-mode .betting-panel, .elevate-mode .game-controls, 
+  .elevate-mode [class*="control"], .elevate-mode [class*="panel"], .elevate-mode [class*="betting"], 
+  .elevate-mode [class*="sidebar"], .elevate-mode [data-testid*="control"], .elevate-mode [data-testid*="panel"] {
+    transition: background-color 0.2s ease, color 0.2s ease !important;
+  }
+  /* Prevent any layout shifts from elevate mode toggle */
+  .elevate-mode, .elevate-enabled, [class*="elevate"], 
+  .mode-toggle, .game-mode, [data-mode] {
+    will-change: auto !important;
+    transform: none !important;
+    transition: background-color 0.2s ease, color 0.2s ease !important;
+  }
+  /* Stabilize the entire game container */
+  #root, .game-container, .main-container, .app-container {
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+  
+
+  /* Prevent flex/grid layout shifts */
+  .game-layout, .main-layout, [class*="layout"] {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    align-items: flex-start !important;
+  }
+  /* UNIVERSAL STAKE ENGINE OPTIMIZATION - FORCE DESKTOP LAYOUT ON ALL DEVICES */
+  /* Apply desktop layout regardless of screen size when on Stake Engine */
+  
+  /* Base layout - applies to ALL screen sizes */
+  html[data-embedded="true"] #root, 
+  html[data-embedded="true"] .game-container, 
+  html[data-embedded="true"] .main-container, 
+  html[data-embedded="true"] .app-container,
+  .stake-embedded #root,
+  .stake-embedded .game-container {
+    min-width: 1200px !important;
+    width: 100% !important;
+    height: 100vh !important;
+    max-width: none !important;
+    transform: scale(1) !important;
+    transform-origin: top left !important;
+    overflow-x: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Force desktop spacing on ALL devices */
+  html[data-embedded="true"] .game-content,
+  html[data-embedded="true"] .game-wrapper,
+  html[data-embedded="true"] [class*="game"],
+  .stake-embedded .game-content,
+  .stake-embedded .game-wrapper {
+    padding: 20px !important;
+    margin: 0 auto !important;
+    max-width: none !important;
+    width: 100% !important;
+    min-width: 1160px !important;
+  }
+
+  /* Control panel - maintain desktop size on ALL devices */
+  html[data-embedded="true"] .control-panel, 
+  html[data-embedded="true"] .controls, 
+  html[data-embedded="true"] .betting-panel, 
+  html[data-embedded="true"] .game-controls,
+  html[data-embedded="true"] [class*="control"], 
+  html[data-embedded="true"] [class*="panel"], 
+  html[data-embedded="true"] [class*="betting"],
+  .stake-embedded .control-panel,
+  .stake-embedded .controls,
+  .stake-embedded .betting-panel {
+    min-width: 300px !important;
+    width: auto !important;
+    font-size: 14px !important;
+    padding: 12px !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+  }
+
+  /* Elevator doors - maintain size on ALL devices */
+  html[data-embedded="true"] .doors, 
+  html[data-embedded="true"] .elevator-doors, 
+  html[data-embedded="true"] [class*="door"], 
+  html[data-embedded="true"] canvas,
+  .stake-embedded .doors,
+  .stake-embedded .elevator-doors,
+  .stake-embedded canvas {
+    min-width: 400px !important;
+    min-height: 500px !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  /* Override ALL mobile breakpoints for Stake Engine */
+  @media screen and (max-width: 1199px) {
+    html[data-embedded="true"], .stake-embedded {
+      min-width: 1200px !important;
+      overflow-x: auto !important;
+    }
+    html[data-embedded="true"] * {
+      max-width: none !important;
+    }
+  }
+
+  /* Mobile override - force desktop layout even on small screens */
+  @media screen and (max-width: 767px) {
+    html[data-embedded="true"] #root, .stake-embedded #root {
+      min-width: 1200px !important;
+      transform: scale(0.8) !important;
+      transform-origin: top left !important;
+    }
+  }
+
+  /* Extra small screens - scale down but maintain desktop layout */
+  @media screen and (max-width: 480px) {
+    html[data-embedded="true"] #root, .stake-embedded #root {
+      min-width: 1200px !important;
+      transform: scale(0.6) !important;
+      transform-origin: top left !important;
+    }
+  }
+
+  /* Stake Engine specific device modes */
+  .stake-engine-mobile html[data-embedded="true"],
+  .stake-engine-tablet html[data-embedded="true"],
+  [data-device-type="mobile"] html[data-embedded="true"],
+  [data-device-type="tablet"] html[data-embedded="true"] {
+    min-width: 1200px !important;
+    overflow-x: auto !important;
+  }
+  /* Detect Stake Engine environment and force desktop styles */
+  html[data-embedded="true"], 
+  body[data-embedded="true"],
+  .stake-embedded,
+  iframe body,
+  [data-stake-game="true"] {
+    min-width: 1200px !important;
+    overflow-x: auto !important;
+  }
+
+  /* =============================== */
+  /* Desktop Responsive Enhancements */
+  /* =============================== */
+  :root {
+    /* Edge padding (gutter) and desktop gap between columns */
+    --gutter-x: max(24px, env(safe-area-inset-left));
+    --gutter-y: max(24px, env(safe-area-inset-top));
+    --gutter-r: max(24px, env(safe-area-inset-right));
+    --gutter-b: max(24px, env(safe-area-inset-bottom));
+    --gap-desktop: max(5vw, 24px);
+    --desktop-threshold: 1100px;
+  }
+
+  /* Apply gutters to root containers so nothing touches edges */
+  #root,
+  .app-container,
+  .main-container,
+  .game-container {
+    padding-left: var(--gutter-x) !important;
+    padding-right: var(--gutter-r) !important;
+    padding-top: var(--gutter-y) !important;
+    padding-bottom: var(--gutter-b) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Maintain consistent gaps between major panels on desktop */
+  @media (min-width: 1100px) and (pointer: fine) {
+    .game-layout,
+    .main-layout,
+    .app-container,
+    .main-container,
+    [class*="layout"],
+    [class*="container"] {
+      column-gap: var(--gap-desktop) !important;
+      row-gap: var(--gap-desktop) !important;
+    }
+
+    /* Keep three columns in a row on desktop */
+    .game-layout,
+    .main-layout,
+    .app-container,
+    .main-container,
+    [class*="layout"] {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: stretch !important;
+      flex-wrap: nowrap !important;
+    }
+
+    /* Side panels sizing & scroll if tight */
+    [class*="session"],
+    [data-session],
+    [class*="stats"],
+    [class*="left"],
+    [class*="sidebar"] {
+      min-width: 280px;
+      flex: 0 1 28ch;
+      overflow-y: auto;
+    }
+
+    [class*="control"],
+    [class*="betting"],
+    [data-testid*="control"],
+    [class*="right"] {
+      min-width: 300px;
+      flex: 0 1 32ch;
+      overflow-y: auto;
+    }
+
+    /* Prevent content squeeze */
+    .game-layout > *,
+    .main-layout > *,
+    .app-container > *,
+    .main-container > * {
+      min-width: 0;
+    }
+  }
+
+  /* Ensure interactive controls remain usable */
+  button, [role="button"], input[type="button"], input[type="submit"], .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Typography scales gently across desktop range without breaking layout */
+  :root {
+    --text-sm: clamp(12px, 0.75vw, 14px);
+    --text-md: clamp(14px, 0.9vw, 16px);
+    --text-lg: clamp(18px, 1.2vw, 22px);
+    --text-xl: clamp(22px, 1.6vw, 28px);
+  }
+  body { font-size: var(--text-md); }
+</style>
+<script>
+(()=>{
+  const clip=document.createElement('div');clip.className='center-door-clip';
+  const line=document.createElement('div');line.className='center-door-line';clip.appendChild(line);
+  document.addEventListener('DOMContentLoaded',()=>{document.body.appendChild(clip)});
+  const sel=['[data-door-container]','.door-container','.doors','.elevator-doors','[class*="door"]','[class*="elevator"]','canvas'];
+  const root=()=>document.getElementById('root')||document.body;
+  function pickTarget(){
+    const nodes=root().querySelectorAll(sel.join(','));
+    let best=null,bestScore=-1,vw=innerWidth,vh=innerHeight;
+    nodes.forEach(el=>{
+      const r=el.getBoundingClientRect();
+      if(r.width<vw*0.2||r.height<vh*0.2) return;
+      const centerDist=Math.abs((r.left+r.right)/2 - vw/2);
+      const score=r.width*r.height - centerDist*1000;
+      if(score>bestScore){best=el;bestScore=score}
+    });
+    return best;
+  }
+  function positionTo(el){
+    const r=el.getBoundingClientRect();
+    clip.style.left=r.left+'px';clip.style.top=r.top+'px';clip.style.width=r.width+'px';clip.style.height=r.height+'px';
+    clip.style.display='block';
+  }
+  let current=null,ro=null;
+  function attach(){
+    const t=pickTarget();
+    if(!t){clip.style.display='none';return;}
+    if(current!==t){
+      current=t;
+      if(ro&&ro.disconnect) ro.disconnect();
+      if('ResizeObserver'in window){ro=new ResizeObserver(()=>positionTo(current));ro.observe(current)}
+    }
+    positionTo(current);
+  }
+  const mo=new MutationObserver(()=>attach());
+  mo.observe(document.documentElement,{childList:true,subtree:true});
+  addEventListener('load',attach);addEventListener('resize',()=>current&&positionTo(current));setTimeout(attach,1200);
+
+  // Balance font enhance: add class to likely balance element
+  const balanceSel=['[data-balance]','.balance','.balance-display','.balance__value','[class*="balance"]','[id*="balance"]'];
+  function enhanceBalance(){
+    const el=root().querySelector(balanceSel.join(','));
+    if(el) el.classList.add('balance-orbitron');
+  }
+  const mo2=new MutationObserver(()=>enhanceBalance());
+  mo2.observe(document.documentElement,{childList:true,subtree:true});
+  addEventListener('load',enhanceBalance);setTimeout(enhanceBalance,1200);
+
+  // Only apply control panel stability when elevate mode is actually being toggled
+  function preventElevateModeShifts(){
+    const elevateButtons=root().querySelectorAll('[class*="elevate"], .mode-toggle, .game-mode, [data-mode]');
+    elevateButtons.forEach(btn=>{
+      if(!btn.dataset.stabilized){
+        btn.style.transition='background-color 0.2s ease, color 0.2s ease';
+        btn.dataset.stabilized='true';
+      }
+    });
+  }
+  const mo3=new MutationObserver(()=>preventElevateModeShifts());
+  mo3.observe(document.documentElement,{childList:true,subtree:true});
+  addEventListener('load',preventElevateModeShifts);setTimeout(preventElevateModeShifts,1200);
+
+  // COMPREHENSIVE Stake Engine environment detection and optimization
+  function detectStakeEnvironment(){
+    const isStake = window.location.hostname.includes('stake') || 
+                   window.location.hostname.includes('stake-engine') ||
+                   window.parent !== window ||
+                   document.referrer.includes('stake') ||
+                   window.location.pathname.includes('/games/');
+    
+    if(isStake){
+      // Set embedded attributes
+      document.documentElement.setAttribute('data-embedded', 'true');
+      document.body.setAttribute('data-stake-game', 'true');
+      document.body.classList.add('stake-embedded');
+      
+      // Force desktop viewport for ALL device modes
+      const viewport = document.querySelector('meta[name="viewport"]');
+      if(viewport){
+        viewport.setAttribute('content', 'width=1200, initial-scale=1, user-scalable=yes, minimum-scale=1, maximum-scale=3');
+      }
+      
+      // Apply universal desktop layout
+      const gameContainer = root();
+      if(gameContainer){
+        gameContainer.style.minWidth = '1200px';
+        gameContainer.style.width = '100%';
+        gameContainer.style.overflowX = 'auto';
+        gameContainer.style.boxSizing = 'border-box';
+        gameContainer.classList.add('stake-embedded');
+        
+        // Handle small screen scaling
+        const screenWidth = window.innerWidth || screen.width;
+        if(screenWidth < 768){
+          gameContainer.style.transform = 'scale(0.8)';
+          gameContainer.style.transformOrigin = 'top left';
+        } else if(screenWidth < 480){
+          gameContainer.style.transform = 'scale(0.6)';
+          gameContainer.style.transformOrigin = 'top left';
+        } else {
+          gameContainer.style.transform = 'scale(1)';
+        }
+      }
+      
+      // Override any existing responsive styles
+      const style = document.createElement('style');
+      style.textContent = `
+        html[data-embedded="true"] * {
+          transition: none !important;
+        }
+        .stake-embedded * {
+          max-width: none !important;
+          flex-shrink: 0 !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+  
+  // Enhanced detection with multiple triggers
+  detectStakeEnvironment();
+  addEventListener('load', detectStakeEnvironment);
+  addEventListener('resize', detectStakeEnvironment);
+  setTimeout(detectStakeEnvironment, 500);
+  setTimeout(detectStakeEnvironment, 1500);
+  setTimeout(detectStakeEnvironment, 3000);
+})();
+</script>
+</head><body><div id="root"></div><script defer="defer" src="bundle.c3436aac26c56264b8ea.js"></script></body></html>
